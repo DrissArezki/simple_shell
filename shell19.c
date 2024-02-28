@@ -1,174 +1,159 @@
 #include"shell.h"
 /**
- * check_vars - check if the typed variable is $$ or $?
- * @h: head of the linked list
- * @in: user_in str
- * @st: last status of the Shell
- * @data: data strcture
- * Return: void
+ * shell_loop - looper
+ * @Data_sh: data (av, user_in, args)
+ * Return: void.
  */
-int check_vars(StoreVar **h, char *in, char *st, Data_sl *data)
+void shell_loop(Data_sl *Data_sh)
 {
-	int i, lst, lpd;
+	int prompte, End_of;
+	char *user_in;
 
-	lst = _strlen(st);
-	lpd = _strlen(data->pid);
-
-	for (i = 0; in[i]; i++)
+	prompte = 1;
+	while (prompte == 1)
 	{
-		if (in[i] == '$')
+		write(STDIN_FILENO, "$ ", 2);
+		user_in = read_line(&End_of);
+		if (End_of != -1)
 		{
-			if (in[i + 1] == '?')
-				add_Storevar(h, 2, st, lst), i++;
-			else if (in[i + 1] == '$')
-				add_Storevar(h, 2, data->pid, lpd), i++;
-			else if (in[i + 1] == '\n')
-				add_Storevar(h, 0, NULL, 0);
-			else if (in[i + 1] == '\0')
-				add_Storevar(h, 0, NULL, 0);
-			else if (in[i + 1] == ' ')
-				add_Storevar(h, 0, NULL, 0);
-			else if (in[i + 1] == '\t')
-				add_Storevar(h, 0, NULL, 0);
-			else if (in[i + 1] == ';')
-				add_Storevar(h, 0, NULL, 0);
-			else
-				check_env(h, in + i, data);
-		}
-	}
+			user_in = cls_comment(user_in);
+			if (user_in == NULL)
+				continue;
 
-	return (i);
-}
-
-/**
- * replaced_user_in - replaces str into variables
- * @head: head of the linked list
- * @user_in: user_in str
- * @new_user_in: new user_in str (replaced)
- * @nlen: new length
- * Return: replaced str
- */
-char *replaced_user_in(StoreVar **head, char *user_in,
-char *new_user_in, int nlen)
-{
-	StoreVar *indx;
-	int i, j, k;
-
-	indx = *head;
-	for (j = i = 0; i < nlen; i++)
-	{
-		if (user_in[j] == '$')
-		{
-			if (!(indx->len_var) && !(indx->len_val))
+			if (check_error(Data_sh, user_in) == 1)
 			{
-				new_user_in[i] = user_in[j];
-				j++;
+				Data_sh->status = 2;
+				free(user_in);
+				continue;
 			}
-			else if (indx->len_var && !(indx->len_val))
-			{
-				for (k = 0; k < indx->len_var; k++)
-					j++;
-				i--;
-			}
-			else
-			{
-				for (k = 0; k < indx->len_val; k++)
-				{
-					new_user_in[i] = indx->val[k];
-					i++;
-				}
-				j += (indx->len_var);
-				i--;
-			}
-			indx = indx->next;
+			user_in = rep_var(user_in, Data_sh);
+			prompte = cmd_spliter(Data_sh, user_in);
+			Data_sh->ln_count += 1;
+			free(user_in);
 		}
 		else
 		{
-			new_user_in[i] = user_in[j];
-			j++;
+			prompte = 0;
+			free(user_in);
 		}
 	}
-
-	return (new_user_in);
 }
 
+
 /**
- * rep_var - calls functions to replace str into vars
+ * swap_char - swaps | and & for non-printed char
  * @user_in: user_in str
- * @Data_sh: data strcture
- * Return: replaced str
+ * @bool: swap
+ * Return: swapped str
  */
-char *rep_var(char *user_in, Data_sl *Data_sh)
+char *swap_char(char *user_in, int bool)
 {
-	StoreVar *head, *indx;
-	char *status, *new_user_in;
-	int olen, nlen;
+	int i;
 
-	status = func_itoa(Data_sh->status);
-	head = NULL;
-
-	olen = check_vars(&head, user_in, status, Data_sh);
-
-	if (head == NULL)
+	if (bool == 0)
 	{
-		free(status);
-		return (user_in);
-	}
-
-	indx = head;
-	nlen = 0;
-
-	while (indx != NULL)
-	{
-		nlen += (indx->len_val - indx->len_var);
-		indx = indx->next;
-	}
-
-	nlen += olen;
-
-	new_user_in = malloc(sizeof(char) * (nlen + 1));
-	new_user_in[nlen] = '\0';
-
-	new_user_in = replaced_user_in(&head, user_in, new_user_in, nlen);
-
-	free(user_in);
-	free(status);
-	free_StoreVar(&head);
-
-	return (new_user_in);
-}
-
-
-/**
- * cls_comment - clear comments from user_in
- * @in: user_in str
- * Return: user_in
- */
-char *cls_comment(char *in)
-{
-	int i, j;
-
-	j = 0;
-	for (i = 0; in[i]; i++)
-	{
-		if (in[i] == '#')
+		for (i = 0; user_in[i]; i++)
 		{
-			if (i == 0)
+			if (user_in[i] == '|')
 			{
-				free(in);
-				return (NULL);
+				if (user_in[i + 1] != '|')
+					user_in[i] = 16;
+				else
+					i++;
 			}
 
-			if (in[i - 1] == ' ' || in[i - 1] == '\t' || in[i - 1] == ';')
-				j = i;
+			if (user_in[i] == '&')
+			{
+				if (user_in[i + 1] != '&')
+					user_in[i] = 12;
+				else
+					i++;
+			}
+		}
+	}
+	else
+	{
+		for (i = 0; user_in[i]; i++)
+		{
+			user_in[i] = (user_in[i] == 16 ? '|' : user_in[i]);
+			user_in[i] = (user_in[i] == 12 ? '&' : user_in[i]);
+		}
+	}
+	return (user_in);
+}
+
+/**
+ * add_nodes - add separators and cmd lines in the lists
+ * @head_s: head separator list
+ * @head_l: head cmd lines list
+ * @user_in: user_in str
+ * Return: void
+ */
+void add_nodes(sperator_lst **head_s, list_ln **head_l, char *user_in)
+{
+	int i;
+	char *ln;
+
+	user_in = swap_char(user_in, 0);
+
+	for (i = 0; user_in[i]; i++)
+	{
+		if (user_in[i] == ';')
+			add_node(head_s, user_in[i]);
+
+		if (user_in[i] == '|' || user_in[i] == '&')
+		{
+			add_node(head_s, user_in[i]);
+			i++;
 		}
 	}
 
-	if (j != 0)
+	ln = _strtok(user_in, ";|&");
+	do {
+		ln = swap_char(ln, 1);
+		AddLineNode(head_l, ln);
+		ln = _strtok(NULL, ";|&");
+	} while (ln != NULL);
+
+}
+
+/**
+ * go_next - go to the next cmd
+ * @list_s: separator list
+ * @list_l: cmd line list
+ * @Data_sh: strcture
+ * Return: void
+ */
+void go_next(sperator_lst **list_s, list_ln **list_l, Data_sl *Data_sh)
+{
+	int check_sep;
+	sperator_lst *ls_s;
+	list_ln *ls_l;
+
+	check_sep = 1;
+	ls_s = *list_s;
+	ls_l = *list_l;
+
+	while (ls_s != NULL && check_sep)
 	{
-		in = func_realloc(in, i, j + 1);
-		in[j] = '\0';
+		if (Data_sh->status == 0)
+		{
+			if (ls_s->separator == '&' || ls_s->separator == ';')
+				check_sep = 0;
+			if (ls_s->separator == '|')
+				ls_l = ls_l->next, ls_s = ls_s->next;
+		}
+		else
+		{
+			if (ls_s->separator == '|' || ls_s->separator == ';')
+				check_sep = 0;
+			if (ls_s->separator == '&')
+				ls_l = ls_l->next, ls_s = ls_s->next;
+		}
+		if (ls_s != NULL && !check_sep)
+			ls_s = ls_s->next;
 	}
 
-	return (in);
+	*list_s = ls_s;
+	*list_l = ls_l;
 }
