@@ -1,4 +1,35 @@
-#include "shell.h"
+#include"shell.h"
+/**
+ * msg_help - function that retrieves help messages according builtin
+ * @Data_sh: data strcture (args and user_in)
+ * Return: Return 0
+*/
+int msg_help(Data_sl *Data_sh)
+{
+
+	if (Data_sh->args[1] == 0)
+		func_helper_general();
+	else if (_strcmp(Data_sh->args[1], "setenv") == 0)
+		func_helper_set_env();
+	else if (_strcmp(Data_sh->args[1], "env") == 0)
+		func_helper_env();
+	else if (_strcmp(Data_sh->args[1], "unset_env") == 0)
+		func_helper_unset_env();
+	else if (_strcmp(Data_sh->args[1], "help") == 0)
+		func_helper();
+	else if (_strcmp(Data_sh->args[1], "exit") == 0)
+		func_helper_exit();
+	else if (_strcmp(Data_sh->args[1], "cd") == 0)
+		func_helper_cd();
+	else if (_strcmp(Data_sh->args[1], "alias") == 0)
+		func_helper_alias();
+	else
+		write(STDERR_FILENO, Data_sh->args[0],
+		      _strlen(Data_sh->args[0]));
+
+	Data_sh->status = 0;
+	return (1);
+}
 
 
 /**
@@ -34,7 +65,6 @@ void bring_line(char **lineptr, size_t *n, char *buffer, size_t j)
 		free(buffer);
 	}
 }
-
 /**
  * get_line - Read stdin from stream
  * @lineptr: buffer that stores the user_in
@@ -83,4 +113,15 @@ ssize_t get_line(char **lineptr, size_t *n, FILE *stream)
 	if (i != 0)
 		user_in = 0;
 	return (retval);
+}
+
+
+/**
+ * hundel_ctrd - Handle the crtl + c call in prompt
+ * @s: arg
+ */
+void hundel_ctrd(int s)
+{
+	(void)s;
+	write(STDOUT_FILENO, "\n$ ", 3);
 }
