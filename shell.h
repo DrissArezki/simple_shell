@@ -12,4 +12,16 @@
 #include <signal.h>
 #include <limits.h>
 
+typedef struct LineList
+{
+	char *line;
+	struct LineList *next;
+} list_ln;
+
+ssize_t get_line(char **lineptr, size_t *n, FILE *stream);
+
+
+
+
+
 #endif

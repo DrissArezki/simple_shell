@@ -1,71 +1,51 @@
-#include <unistd.h>
+#include "shell.h"
 
-#define BUFFER_SIZE 1024
+/**
+ * get_line - Read stdin from stream
+ * @lineptr: buffer that stores the user_in
+ * @n: size of lineptr
+ * @stream: stream to read from
+ * Return: The number of bytes
+ */
+ssize_t get_line(char **lineptr, size_t *n, FILE *stream)
+{
+	int i;
+	static ssize_t user_in;
+	ssize_t retval;
+	char *buffer;
+	char t = 'z';
 
-char *custom_getline(void) {
-	static char buffer[BUFFER_SIZE];
-	static int buffer_index = 0;
-	static int bytes_read = 0;
-	static int eof_reached = 0;
-	
-	char *line = (char *)malloc(BUFFER_SIZE);
-	
-	if (line == NULL) {
-		perror("Memory allocation failed");
-		exit(EXIT_FAILURE);
-	}
-	
-	int line_index = 0;
-	int bytes_available = 0;
-	
-	while (!eof_reached) {
-		if (buffer_index >= bytes_read) {
-			bytes_read = read(STDIN_FILENO, buffer, BUFFER_SIZE);
-			buffer_index = 0;
-			
-			if (bytes_read <= 0) {
-				eof_reached = 1;
-				break;
-			}
+	if (user_in == 0)
+		fflush(stream);
+	else
+		return (-1);
+	user_in = 0;
+
+	buffer = malloc(sizeof(char) * BUFFERSIZE);
+	if (buffer == 0)
+		return (-1);
+	while (t != '\n')
+	{
+		i = read(STDIN_FILENO, &t, 1);
+		if (i == -1 || (i == 0 && user_in == 0))
+		{
+			free(buffer);
+			return (-1);
 		}
-		
-		bytes_available = bytes_read - buffer_index;
-		
-		int i;
-		
-		for (i = 0; i < bytes_available; i++) {
-			if (buffer[buffer_index + i] == '\n') {
-				line[line_index++] = buffer[buffer_index + i++];
-				buffer_index += i;
-				break;
-			} else {
-				line[line_index++] = buffer[buffer_index + i];
-			}
-		}
-		
-		if (i < bytes_available)
+		if (i == 0 && user_in != 0)
+		{
+			user_in++;
 			break;
-		else
-			buffer_index += i;
+		}
+		if (user_in >= BUFFERSIZE)
+			buffer = func_realloc(buffer, user_in, user_in + 1);
+		buffer[user_in] = t;
+		user_in++;
 	}
-	
-	line[line_index] = '\0';
-	
-	if (line_index == 0 && eof_reached) {
-		free(line);
-		return (NUL)L;
-	}
-	
-	return (line);
-}
-
-int main() {
-	char *line;
-	
-	while ((line = custom_getline()) != NULL) {
-		printf("Line: %s", line);
-		free(line);
-	}
-	
-	return (0);
+	buffer[user_in] = '\0';
+	bring_line(lineptr, n, buffer, user_in);
+	retval = user_in;
+	if (i != 0)
+		user_in = 0;
+	return (retval);
 }
