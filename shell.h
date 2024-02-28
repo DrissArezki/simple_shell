@@ -12,12 +12,16 @@
 #include <signal.h>
 #include <limits.h>
 
+#define BUFFERSIZE 1024
+
 typedef struct LineList
 {
 	char *line;
 	struct LineList *next;
 } list_ln;
 
+
+void bring_line(char **lineptr, size_t *n, char *buffer, size_t j);
 ssize_t get_line(char **lineptr, size_t *n, FILE *stream);
 
 
